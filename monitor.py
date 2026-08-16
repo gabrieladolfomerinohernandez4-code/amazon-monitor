@@ -38,6 +38,23 @@ SEARCH_PARAMS = {
     "region": "México",
 }
 
+# Palabras que si aparecen en el titulo, se descarta la vacante (gerencias,
+# posiciones de liderazgo/corporativas). Dejamos pasar todo lo demas,
+# incluyendo cualquier variante de "ayudante"/asociado operativo.
+TITLE_EXCLUDE_KEYWORDS = [
+    "manager",
+    "gerente",
+    "director",
+    "supervisor",
+    "sr.",
+    "senior",
+    "lead",
+    "líder",
+    "lider",
+    "jefe",
+    "coordinador",
+]
+
 SEEN_JOBS_FILE = Path("seen_jobs.json")
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
@@ -58,6 +75,11 @@ def fetch_jobs() -> list[dict]:
     resp.raise_for_status()
     data = resp.json()
     return data.get("jobs", [])
+
+
+def title_is_operational(title: str) -> bool:
+    t = title.lower()
+    return not any(bad in t for bad in TITLE_EXCLUDE_KEYWORDS)
 
 
 def load_seen_ids() -> set[str]:
@@ -108,8 +130,11 @@ def main() -> None:
     jobs = fetch_jobs()
     print(f"Total vacantes recibidas del endpoint: {len(jobs)}")
 
+    operational_jobs = [j for j in jobs if title_is_operational(j.get("title", ""))]
+    print(f"Vacantes tras excluir gerencia/liderazgo: {len(operational_jobs)}")
+
     seen_ids = load_seen_ids()
-    new_jobs = [j for j in jobs if j.get("id_icims") not in seen_ids]
+    new_jobs = [j for j in operational_jobs if j.get("id_icims") not in seen_ids]
 
     if not new_jobs:
         print("No hay vacantes nuevas.")
