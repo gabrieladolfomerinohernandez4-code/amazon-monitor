@@ -38,29 +38,6 @@ SEARCH_PARAMS = {
     "region": "México",
 }
 
-# Palabras clave que SI queremos (case-insensitive). Si una vacante no
-# contiene ninguna de estas en el titulo, se descarta aunque haya salido
-# en la categoria "fulfillment-warehouse-associate" (Amazon a veces mete
-# puestos gerenciales ahi).
-TITLE_INCLUDE_KEYWORDS = [
-    "fulfillment associate",
-    "warehouse associate",
-    "sortation associate",
-    "asociado",
-    "almacén",
-    "almacen",
-]
-
-# Palabras que si aparecen, se descarta la vacante sin importar lo anterior
-# (gerencias, posiciones corporativas, etc)
-TITLE_EXCLUDE_KEYWORDS = [
-    "manager",
-    "gerente",
-    "director",
-    "sr.",
-    "senior",
-]
-
 SEEN_JOBS_FILE = Path("seen_jobs.json")
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
@@ -81,13 +58,6 @@ def fetch_jobs() -> list[dict]:
     resp.raise_for_status()
     data = resp.json()
     return data.get("jobs", [])
-
-
-def title_matches_filters(title: str) -> bool:
-    t = title.lower()
-    if any(bad in t for bad in TITLE_EXCLUDE_KEYWORDS):
-        return False
-    return any(good in t for good in TITLE_INCLUDE_KEYWORDS)
 
 
 def load_seen_ids() -> set[str]:
@@ -138,11 +108,8 @@ def main() -> None:
     jobs = fetch_jobs()
     print(f"Total vacantes recibidas del endpoint: {len(jobs)}")
 
-    filtered = [j for j in jobs if title_matches_filters(j.get("title", ""))]
-    print(f"Vacantes tras filtro de título: {len(filtered)}")
-
     seen_ids = load_seen_ids()
-    new_jobs = [j for j in filtered if j.get("id_icims") not in seen_ids]
+    new_jobs = [j for j in jobs if j.get("id_icims") not in seen_ids]
 
     if not new_jobs:
         print("No hay vacantes nuevas.")
