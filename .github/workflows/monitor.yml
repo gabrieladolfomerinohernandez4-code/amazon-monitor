@@ -30,10 +30,10 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python monitor.py
 
-      - name: Guardar seen_jobs.json si cambió
+      - name: Guardar estado si cambió
         run: |
           git config user.name "amazon-monitor-bot"
           git config user.email "actions@github.com"
-          git add seen_jobs.json
-          git diff --staged --quiet || git commit -m "Actualiza vacantes vistas [skip ci]"
+          git add seen_jobs.json history.json state.json
+          git diff --staged --quiet || git commit -m "Actualiza estado del monitor [skip ci]"
           git push
