@@ -1,0 +1,39 @@
+name: Monitor vacantes Amazon
+
+on:
+  schedule:
+    # Cada 15 minutos. Sintaxis cron en UTC.
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}   # permite correrlo manualmente desde la pestaña Actions
+
+permissions:
+  contents: write   # necesario para poder hacer commit de seen_jobs.json
+
+jobs:
+  check-jobs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Correr monitor
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python monitor.py
+
+      - name: Guardar seen_jobs.json si cambió
+        run: |
+          git config user.name "amazon-monitor-bot"
+          git config user.email "actions@github.com"
+          git add seen_jobs.json
+          git diff --staged --quiet || git commit -m "Actualiza vacantes vistas [skip ci]"
+          git push
